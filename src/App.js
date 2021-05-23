@@ -3,7 +3,10 @@ import axios from 'axios';
 
 import Searchbar from './components/searchbar';
 import ImageGallery from './components/ImageGallery/ImageGallery';
-// import Button from './components/Button/Button'
+import Button from './components/Button/Button';
+import Loader from './components/Loader/Loader'
+
+import Modal from './components/Modal/Modal'
 
 
 
@@ -14,8 +17,21 @@ class ImageFinder extends Component {
   state = {
     hits: [],
     currentPage: 1,
-    searchQuery:''
+    searchQuery: '',
+    isLoading: false,
+    error: null,
+    showModal:false
   }
+  
+  toggleModal=()=> {
+    this.setState(({showModal}) => ({
+      showModal:!showModal
+    }))
+  }
+
+
+
+
 
   componentDidUpdate(prevProps,prevState) {
     if (prevState.searchQuery !== this.state.searchQuery) {
@@ -25,14 +41,16 @@ class ImageFinder extends Component {
  
   
   onChangeQuery = query => {
-    this.setState({ searchQuery: query, currentPage:1,hits:[] });
+    this.setState({ searchQuery: query, currentPage:1,hits:[], error:null });
      
     
   }
 
    
   fetchImages = () => {
-  const { currentPage, searchQuery} = this.state;
+    const { currentPage, searchQuery } = this.state;
+    
+    this.setState({isLoading:true})
 
     axios.get(`https://pixabay.com/api/?q=${searchQuery}&page=${currentPage}&key=21736808-2f788a7747a7b6bd840ada646&image_type=photo&orientation=horizontal&per_page=12`
     ).then(response =>
@@ -41,16 +59,26 @@ class ImageFinder extends Component {
         {
           hits:[...prevState.hits, ...response.data.hits],
         currentPage:prevState.currentPage+1}))
-    });
+    }).catch(error=>this.setState({error})).finally(()=>this.setState({isLoading:false}));
   }
 
   render() {
-    const { hits } = this.state;
+    const { hits, isLoading, error, showModal } = this.state;
+    const shouldRenderLoadButton = hits.length>0&&!isLoading
     return (
       <div>
-        <Searchbar onSubmit={this.onChangeQuery}/>
+        {error&&<h1>Sorry,Error.Try again</h1>}
+        <Searchbar onSubmit={this.onChangeQuery} />
+     
         <ImageGallery imageArray={hits}></ImageGallery>
-        <button type="button" onClick={this.fetchImages}>Load more!!!!!!!!!</button>
+       
+        {isLoading&&<Loader/>}
+        {shouldRenderLoadButton && <Button fetch={this.fetchImages} />}
+        
+
+        <button type="button" onClick={this.toggleModal}>Open Modal</button>
+        {showModal&&<Modal/>}
+
     </div>
     
 )
